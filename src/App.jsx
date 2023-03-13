@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import './styles/global.css'
 import { Field, Formik } from 'formik'
-import {Button, Dialog, DialogContent, DialogTitle, Grid, Typography} from '@mui/material'
+import { Button, Dialog, DialogContent, DialogTitle, Grid, Typography} from '@mui/material'
 import { TextField } from 'formik-material-ui';
 import * as Yup from 'yup';
 import { Box } from '@mui/system';
@@ -10,7 +10,7 @@ function App() {
     const [listaProgramas, setListaProgramas] = useState([])
     const [isOpenModal, setIsOpenModal] = useState(false)
     const [dados, setDados] = useState([])
-
+    
     const initialValues = {
         id: dados.id || undefined,
         title: dados.title || '',
@@ -19,7 +19,7 @@ function App() {
         urlRepo:dados.urlRepo || '',
         img:dados.img || '',
     }
-
+    
     const FormSchema = Yup.object().shape({
         title: Yup.string().required('Title is required').min(4),
         description: Yup.string().min(10),
@@ -30,7 +30,6 @@ function App() {
     
     
     const salvarPrograms = (values, resetForm) => {
-        console.log(values)
         fetch('http://localhost:3333/setProgram',{
             method:'POST',
             headers: { 'Content-Type': 'application/json'},
@@ -40,12 +39,29 @@ function App() {
                 description: values.description,
                 urlScreen: values.urlScreen,
                 urlRepo: values.urlRepo,
-                img:values.img
+                img: values.img
             })
         }).then(res => res.json()).then((response) => {
         if(response.status) {
             resetForm()
             setDados([])
+            getList()
+            setIsOpenModal(false)
+        }
+    })
+    }
+
+    const excluiPrograma = (e, values) => {
+        e.preventDefault()
+        e.stopPropagation()
+        fetch('http://localhost:3333/excluiPrograma',{
+            method:'DELETE',
+            headers: { 'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                id: values.id
+            })
+        }).then(res => res.json()).then((response) => {
+        if(response.status) {
             getList()
         }
     })
@@ -65,9 +81,7 @@ function App() {
   const viewPrograma = (programa) => {
     setIsOpenModal(true)
     setDados(programa)
-    console.log(programa)
   }
-
   return (
     <>
         <Grid container spacing={2}>
@@ -79,15 +93,16 @@ function App() {
                     <Grid item xs={6} md={3} lg={2} style={{border:'1px solid black', margin:'10px', cursor:'pointer', borderRadius:'6px'}} onClick={() => viewPrograma(programa)} key={programa.id}>
                         <Box width={'100%'} height={'45%'} padding={'20px'}>
                                 <Typography>{programa.title}</Typography>
+                                <Button fullWidth variant='contained' color='error' onClick={(e) => excluiPrograma(e,programa)}>Excluir</Button>
                         </Box>
                     </Grid>
                     )}
                     </Grid>
-        </Grid>
+            </Grid>
             <Dialog onClose={() => {
                 setIsOpenModal(false)
                 setDados([])
-                }} open={isOpenModal} maxWidth={'md'} fullWidth>
+            }} open={isOpenModal} maxWidth={'md'} fullWidth>
                 <DialogTitle>
                     Cadastro de Programas
                 </DialogTitle>
@@ -98,7 +113,7 @@ function App() {
                         onSubmit={(values, {setSubmitting, resetForm}) => {
                             setSubmitting(false)
                             salvarPrograms(values, resetForm)
-                            }}
+                        }}
                             >
                             {({submitForm, isSubmitting}) => (
                                 <>
@@ -113,6 +128,9 @@ function App() {
                                     </Grid>
                                     <Grid item xs={12} md={3} lg={3}>
                                         <Field component={TextField} fullWidth label='Screen Url ' name='urlScreen' variant='outlined' margin='dense' />
+                                    </Grid>
+                                    <Grid item xs={12}>
+                                        <Field component={TextField} type={'file'} variant='outlined' margin='dense' name='img'/>
                                     </Grid>
                                     <Grid item xs={12}>
                                         <Button disabled={!!isSubmitting}  fullWidth variant='contained' color='primary' onClick={submitForm} >Salvar</Button>
